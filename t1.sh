@@ -27,16 +27,14 @@ echo
 echo -e "$yellow此脚本仅兼容于Debian 10+系统. 如果你的系统不符合,请Ctrl+C退出脚本$none"
 echo -e "可以去 ${cyan}https://github.com/crazypeace/xray-vless-reality${none} 查看脚本整体思路和关键命令, 以便针对你自己的系统做出调整."
 echo -e "有问题加群 ${cyan}https://t.me/+ISuvkzFGZPBhMzE1${none}"
-echo -e "本脚本支持带参数执行, 省略交互过程, 详见GitHub."
 echo "----------------------------------------------------------------"
 
 # 本机 IP
-InFaces=($(ls /sys/class/net/ | grep -E '^(eth|ens|eno|esp|enp|venet|vif)'))
+InFaces=($(ifconfig -s | awk '{print $1}' | grep -E '^(eth|ens|eno|esp|enp|venet|vif)'))  #找所有的网口
 
 for i in "${InFaces[@]}"; do  # 从网口循环获取IP
-    # 增加超时时间, 以免在某些网络环境下请求IPv6等待太久
-    Public_IPv4=$(curl -4s --interface "$i" -m 2 https://www.cloudflare.com/cdn-cgi/trace | grep -oP "ip=\K.*$")
-    Public_IPv6=$(curl -6s --interface "$i" -m 2 https://www.cloudflare.com/cdn-cgi/trace | grep -oP "ip=\K.*$")
+    Public_IPv4=$(curl -4s --interface "$i" --max-time 2 https://www.cloudflare.com/cdn-cgi/trace | grep -oP "ip=\K.*$")
+    Public_IPv6=$(curl -6s --interface "$i" --max-time 2 https://www.cloudflare.com/cdn-cgi/trace | grep -oP "ip=\K.*$")
 
     if [[ -n "$Public_IPv4" ]]; then  # 检查是否获取到IP地址
         IPv4="$Public_IPv4"
@@ -173,8 +171,6 @@ if [[ -z $netstack ]]; then
     elif [[ -n "$IPv6" ]]; then
       ip=${IPv6}
       netstack=6
-    else
-      warn "没有获取到公共IP"
     fi
   fi
 fi
